@@ -1,3 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIST_DIR="$ROOT_DIR/dist"
+DIST_ASSETS_DIR="$DIST_DIR/assets"
+
+mkdir -p "$DIST_DIR" "$DIST_ASSETS_DIR"
+
+# Bundle + minify JS into a single module
+npx --yes esbuild "$ROOT_DIR/src/app.js" \
+  --bundle \
+  --minify \
+  --format=esm \
+  --target=es2020 \
+  --outfile="$DIST_DIR/app.min.js"
+
+# Minify CSS
+npx --yes lightningcss-cli \
+  --minify \
+  --bundle \
+  --output-file "$DIST_DIR/styles.min.css" \
+  "$ROOT_DIR/styles.css"
+
+# Write prod manifest
+cat > "$DIST_DIR/manifest.json" <<'JSON'
+{
+  "name": "Org Tides",
+  "short_name": "OrgTides",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#fafaf9",
+  "icons": [
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+JSON
+ln -sfn "$ROOT_DIR/assets/icons" "$DIST_ASSETS_DIR/icons"
+ln -sfn "$ROOT_DIR/org" "$DIST_DIR/org"
+
+
+
+# Write prod HTML
+cat > "$DIST_DIR/index.html" <<'HTML'
 <!doctype html>
 <html lang="en">
   <head>
@@ -7,7 +67,7 @@
     <meta name="theme-color" content="#fafaf9" />
     <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -195,3 +255,47 @@
     </script>
   </body>
 </html>
+HTML
+
+cat > "$DIST_DIR/sw.js" <<'JS'
+const CACHE_NAME = "org-tides-prod-v1";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./styles.min.css",
+  "./app.min.js",
+  "./manifest.json",
+  "./assets/icons/icon.svg",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+          return null;
+        })
+      )
+    )
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
+});
+JS
+
+echo "Done: $DIST_DIR/index.html, app.min.js, styles.min.css, sw.js"

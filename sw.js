@@ -1,22 +1,13 @@
-const CACHE_NAME = "org-tides-v13";
+const CACHE_NAME = "org-tides-prod-v1";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./src/app.js",
-  "./src/data.js",
-  "./src/events.js",
-  "./src/picker.js",
-  "./src/state.js",
-  "./src/ui.js",
+  "./styles.min.css",
+  "./app.min.js",
   "./manifest.json",
-  "./icon.svg",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./org/todo.org",
-  "./org/inbox.org",
-  "./org/routines.org",
-  "./org/checklist.org",
+  "./assets/icons/icon.svg",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
