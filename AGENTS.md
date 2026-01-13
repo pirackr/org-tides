@@ -1,5 +1,10 @@
 # Repository Guidelines
 
+## General guidelines
+- Break work down into atomic steps.
+- Follow TDD/BDD strictly (red-green-refactor). Write the minimal failing test, then minimal passing code, then refactor.
+- Commit after each atomic step; keep commits small and sequential.
+
 ## Project Structure & Module Organization
 - `index.html`: App shell and markup for the UI panels.
 - `styles.css`: All styling, layout, and animation definitions.
