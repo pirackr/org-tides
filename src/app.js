@@ -11,6 +11,8 @@ import { refresh } from "./ui.js";
 import { initPicker } from "./picker.js";
 import { bindEvents } from "./events.js";
 
+// GraphQL endpoint: http://localhost:8080/.
+// Expected responses: orgFiles { items }, orgFile(path) { headlines { id level title todo tags scheduled children { ... } } }.
 const agendaList = document.getElementById("agendaList");
 const appTitle = document.querySelector(".top-nav__title");
 const appHeader = document.querySelector(".app-header");
@@ -84,7 +86,9 @@ bindEvents({
 
 const initializeData = async () => {
   const data = await loadOrgData();
-  state.data = data.length ? data : JSON.parse(JSON.stringify(FALLBACK_DATA));
+  state.data = Array.isArray(data)
+    ? data
+    : JSON.parse(JSON.stringify(FALLBACK_DATA));
   setSavePickerDefault();
   refresh({
     agendaList,

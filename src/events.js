@@ -44,7 +44,7 @@ export const bindEvents = ({
   let suppressClick = false;
 
   if (agendaList) {
-    agendaList.addEventListener("click", (event) => {
+    agendaList.addEventListener("click", async (event) => {
       const action = event.target.closest(".agenda__action");
       if (action) {
         suppressClick = false;
@@ -52,7 +52,7 @@ export const bindEvents = ({
         if (!fileName) return;
         const index = Number.parseInt(action.dataset.index, 10);
         if (Number.isNaN(index)) return;
-        setTaskStateValue(fileName, index, "KILL");
+        await setTaskStateValue(fileName, index, "KILL");
         refresh();
         return;
       }
@@ -75,7 +75,7 @@ export const bindEvents = ({
       const targetFile = state.data.find((entry) => entry.file === fileName);
       const targetItem = targetFile?.items[index];
       if (targetItem?.state === "PROJ") return;
-      cycleTaskState(fileName, index);
+      await cycleTaskState(fileName, index);
       refresh();
     });
 
@@ -174,9 +174,9 @@ export const bindEvents = ({
   }
 
   if (taskForm) {
-    taskForm.addEventListener("submit", (event) => {
+    taskForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      addTaskItem({
+      await addTaskItem({
         title: taskTitleInput?.value || "",
         status: taskStatusInput?.value || "TODO",
         date: taskDateInput?.value || "",

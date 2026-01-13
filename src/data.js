@@ -1,11 +1,47 @@
 import { STATUS_ORDER, state, viewConfig } from "./state.js";
 
-export const ORG_FILE_PATHS = [
-  "../org/todo.org",
-  "../org/inbox.org",
-  "../org/routines.org",
-  "../org/checklist.org",
-];
+const GRAPHQL_ENDPOINT = "http://localhost:8080/";
+const HEADLINE_FIELDS = "id level title todo tags scheduled";
+const MAX_HEADLINE_DEPTH = 6;
+
+export const buildHeadlineSelection = (depth = MAX_HEADLINE_DEPTH) => {
+  let selection = HEADLINE_FIELDS;
+  for (let i = 0; i < depth; i += 1) {
+    selection = `${HEADLINE_FIELDS} children { ${selection} }`;
+  }
+  return selection;
+};
+
+const HEADLINE_SELECTION = buildHeadlineSelection(MAX_HEADLINE_DEPTH);
+
+const ORG_FILES_QUERY = "query { orgFiles { items } }";
+const ORG_FILE_QUERY = `
+  query OrgFile($path: String!) {
+    orgFile(path: $path) {
+      headlines { ${HEADLINE_SELECTION} }
+    }
+  }
+`;
+const INSERT_HEADLINE_AFTER_MUTATION = `
+  mutation InsertHeadlineAfter($path: String!, $afterId: String!, $title: String!) {
+    insertHeadlineAfter(path: $path, afterId: $afterId, title: $title)
+  }
+`;
+const UPDATE_HEADLINE_TODO_MUTATION = `
+  mutation UpdateHeadlineTodo($path: String!, $id: String!, $todo: String!) {
+    updateHeadlineTodo(path: $path, id: $id, todo: $todo)
+  }
+`;
+const UPDATE_HEADLINE_SCHEDULED_MUTATION = `
+  mutation UpdateHeadlineScheduled($path: String!, $id: String!, $scheduled: String!) {
+    updateHeadlineScheduled(path: $path, id: $id, scheduled: $scheduled)
+  }
+`;
+const WRITE_ORG_FILE_MUTATION = `
+  mutation WriteOrgFile($path: String!, $content: String!) {
+    writeOrgFile(path: $path, content: $content)
+  }
+`;
 
 export const FALLBACK_DATA = [
   {
@@ -23,99 +59,149 @@ export const FALLBACK_DATA = [
   },
 ];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-
-const parseTags = (text) => {
-  const tagMatch = text.match(/(?:\s|^)(:([A-Za-z0-9_@#%]+:)+)\s*$/);
-  if (!tagMatch) {
-    return { text, tags: [] };
-  }
-  const tags = tagMatch[1].split(":").filter(Boolean);
-  const cleaned = text.replace(tagMatch[1], "").trim();
-  return { text: cleaned, tags };
+const getAuthEnvelope = () => {
+  if (typeof window === "undefined") return {};
+  const token = window.ORG_BACKEND_TOKEN;
+  if (!token) return {};
+  const trimmed = token.trim();
+  if (!trimmed) return {};
+  const value = trimmed.startsWith("Bearer ") ? trimmed : `Bearer ${trimmed}`;
+  return { authorization: value };
 };
 
-const parseOrgFile = (fileName, content) => {
-  const lines = content.split(/\r?\n/);
+const requestGraphQL = async (query, variables = {}) => {
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables, ...getAuthEnvelope() }),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const message =
+      payload?.errors?.[0]?.message ||
+      `GraphQL request failed (${response.status})`;
+    throw new Error(message);
+  }
+  if (payload?.errors?.length) {
+    throw new Error(payload.errors[0].message || "GraphQL error");
+  }
+  return payload.data;
+};
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+export const normalizeScheduled = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : String(value).trim();
+};
+
+export const slugify = (value) => {
+  if (!value) return "";
+  const text = String(value).toLowerCase();
+  let slug = "";
+  for (const char of text) {
+    if (/[a-z0-9]/.test(char)) {
+      slug += char;
+    } else if (char === " ") {
+      slug += "-";
+    }
+  }
+  return slug.replace(/^-+/, "").replace(/-+$/, "");
+};
+
+const uniqueTags = (tags) => [...new Set(tags.filter(Boolean))];
+
+export const mapHeadlinesToItems = (headlines = []) => {
   const items = [];
-  const stack = [];
-  let currentItem = null;
-
-  lines.forEach((line) => {
-    const headingMatch = line.match(/^(\*+)\s+(.*)$/);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      const headingText = headingMatch[2].trim();
-      const parsed = parseTags(headingText);
-      let title = parsed.text;
-      const headingTags = parsed.tags;
-      let stateValue = null;
-      const stateMatch = title.match(/^([A-Z]{2,})\s+(.*)$/);
-      if (stateMatch) {
-        stateValue = stateMatch[1];
-        title = stateMatch[2].trim();
-      }
-
-      stack.length = Math.max(0, level - 1);
-      const parentTags = stack.flatMap((entry) => entry.tags);
-      const path = stack.map((entry) => entry.title);
-      stack[level - 1] = { title, tags: headingTags };
-
-      const topHeadline = stack[0]?.title;
-      const derivedTags = topHeadline ? [topHeadline] : [];
-      const tags = Array.from(
-        new Set([...parentTags, ...headingTags, ...derivedTags])
-      );
-      const item = {
-        title,
-        state: stateValue,
-        scheduled: null,
-        timestamps: [],
+  const walk = (nodes, ancestors, topTitle) => {
+    nodes.forEach((headline) => {
+      const nextTopTitle = topTitle ?? headline.title;
+      const ancestorTags = ancestors.flatMap((entry) => entry.tags || []);
+      const path = ancestors.map((entry) => entry.title).filter(Boolean);
+      const tags = uniqueTags([
+        ...ancestorTags,
+        ...(headline.tags || []),
+        ...(nextTopTitle ? [nextTopTitle] : []),
+      ]);
+      const scheduled = normalizeScheduled(headline.scheduled);
+      items.push({
+        id: headline.id,
+        title: headline.title,
+        state: headline.todo ?? null,
+        scheduled,
+        timestamps: scheduled ? [scheduled] : [],
         tags,
         path: path.length ? path : ["Inbox"],
-        level,
-        isTask: Boolean(stateValue),
-      };
-      items.push(item);
-      currentItem = item;
-      return;
-    }
-
-    const scheduledMatch = line.match(/SCHEDULED:\s*<(\d{4}-\d{2}-\d{2})/);
-    if (scheduledMatch && currentItem) {
-      currentItem.scheduled = scheduledMatch[1];
-      if (!currentItem.timestamps.includes(scheduledMatch[1])) {
-        currentItem.timestamps.push(scheduledMatch[1]);
+        level: headline.level ?? 1,
+        isTask: Boolean(headline.todo),
+      });
+      if (headline.children?.length) {
+        walk(
+          headline.children,
+          [...ancestors, { title: headline.title, tags: headline.tags || [] }],
+          nextTopTitle
+        );
       }
-    }
-  });
-
-  return {
-    file: fileName,
-    items,
+    });
   };
+  walk(headlines, [], null);
+  return items;
+};
+
+export const buildTaskContent = ({ title, status, date }) => {
+  const todo = status ? `${status.trim()} ` : "";
+  const lines = [`* ${todo}${title}`];
+  if (date) {
+    lines.push(`SCHEDULED: <${date}>`);
+  }
+  return `${lines.join("\n")}\n`;
+};
+
+export const pickInsertAfterId = (items = []) => {
+  if (!items.length) return null;
+  const topLevel = items.filter((item) => item.level === 1 && item.id);
+  if (topLevel.length) {
+    return topLevel[topLevel.length - 1].id;
+  }
+  const lastWithId = [...items].reverse().find((item) => item.id);
+  return lastWithId?.id || null;
 };
 
 export const loadOrgData = async () => {
-  const results = await Promise.all(
-    ORG_FILE_PATHS.map(async (path) => {
-      try {
-        const response = await fetch(path);
-        if (!response.ok) {
-          throw new Error(`Failed to load ${path}`);
+  try {
+    const data = await requestGraphQL(ORG_FILES_QUERY);
+    const files = data?.orgFiles?.items ?? [];
+    const results = await Promise.all(
+      files.map(async (path) => {
+        try {
+          const fileData = await requestGraphQL(ORG_FILE_QUERY, { path });
+          const headlines = fileData?.orgFile?.headlines ?? [];
+          return { file: path, items: mapHeadlinesToItems(headlines) };
+        } catch (error) {
+          console.warn(`Failed to load ${path}`, error);
+          return null;
         }
-        const text = await response.text();
-        const fileName = path.split("/").pop();
-        return parseOrgFile(fileName, text);
-      } catch (error) {
-        console.warn(error);
-        return null;
-      }
-    })
-  );
-
-  return results.filter(Boolean).filter((entry) => entry.items.length > 0);
+      })
+    );
+    return results.filter(Boolean);
+  } catch (error) {
+    console.warn("Failed to load org data", error);
+    return null;
+  }
 };
+
+const updateHeadlineTodo = async ({ path, id, todo }) =>
+  requestGraphQL(UPDATE_HEADLINE_TODO_MUTATION, { path, id, todo });
+
+const updateHeadlineScheduled = async ({ path, id, scheduled }) =>
+  requestGraphQL(UPDATE_HEADLINE_SCHEDULED_MUTATION, { path, id, scheduled });
+
+const insertHeadlineAfter = async ({ path, afterId, title }) =>
+  requestGraphQL(INSERT_HEADLINE_AFTER_MUTATION, { path, afterId, title });
+
+const writeOrgFile = async ({ path, content }) =>
+  requestGraphQL(WRITE_ORG_FILE_MUTATION, { path, content });
 
 const normalizeQuery = (query) => query.trim().replace(/\s+/g, " ");
 
@@ -182,39 +268,75 @@ export const getNextItems = () => {
   return flattenItems().filter(match);
 };
 
-export const setTaskState = (fileName, index, isDone) => {
+export const setTaskState = async (fileName, index, isDone) => {
   const targetFile = state.data.find((entry) => entry.file === fileName);
   if (!targetFile) return;
   const targetItem = targetFile.items[index];
   if (!targetItem) return;
+  const previousState = targetItem.state;
+  const previousPrev = targetItem.prevState;
   if (isDone) {
     if (targetItem.state !== "DONE") {
       targetItem.prevState = targetItem.state;
       targetItem.state = "DONE";
     }
-    return;
+  } else {
+    targetItem.state = targetItem.prevState || "TODO";
+    delete targetItem.prevState;
   }
-  targetItem.state = targetItem.prevState || "TODO";
-  delete targetItem.prevState;
+  if (!targetItem.id) return;
+  try {
+    await updateHeadlineTodo({
+      path: fileName,
+      id: targetItem.id,
+      todo: targetItem.state || "",
+    });
+  } catch (error) {
+    console.warn("Failed to update task state", error);
+    targetItem.state = previousState;
+    if (previousPrev) {
+      targetItem.prevState = previousPrev;
+    } else {
+      delete targetItem.prevState;
+    }
+  }
 };
 
-export const cycleTaskState = (fileName, index) => {
+const applyTodoUpdate = async (fileName, index, nextState) => {
+  const targetFile = state.data.find((entry) => entry.file === fileName);
+  if (!targetFile) return;
+  const targetItem = targetFile.items[index];
+  if (!targetItem) return;
+  const previousState = targetItem.state;
+  targetItem.state = nextState;
+  if (!targetItem.id) return;
+  try {
+    await updateHeadlineTodo({
+      path: fileName,
+      id: targetItem.id,
+      todo: nextState || "",
+    });
+  } catch (error) {
+    console.warn("Failed to update task state", error);
+    targetItem.state = previousState;
+  }
+};
+
+export const cycleTaskState = async (fileName, index) => {
   const targetFile = state.data.find((entry) => entry.file === fileName);
   if (!targetFile) return;
   const targetItem = targetFile.items[index];
   if (!targetItem) return;
   const current = targetItem.state || "TODO";
   const currentIndex = STATUS_ORDER.indexOf(current);
-  const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % STATUS_ORDER.length;
-  targetItem.state = STATUS_ORDER[nextIndex];
+  const nextIndex =
+    currentIndex === -1 ? 0 : (currentIndex + 1) % STATUS_ORDER.length;
+  const nextState = STATUS_ORDER[nextIndex];
+  await applyTodoUpdate(fileName, index, nextState);
 };
 
-export const setTaskStateValue = (fileName, index, stateValue) => {
-  const targetFile = state.data.find((entry) => entry.file === fileName);
-  if (!targetFile) return;
-  const targetItem = targetFile.items[index];
-  if (!targetItem) return;
-  targetItem.state = stateValue;
+export const setTaskStateValue = async (fileName, index, stateValue) => {
+  await applyTodoUpdate(fileName, index, stateValue);
 };
 
 export const buildSaveTargets = () => {
@@ -241,25 +363,42 @@ export const buildSaveTargets = () => {
   return [...targets.entries()].sort((a, b) => a[1].localeCompare(b[1]));
 };
 
-export const addTaskItem = ({ title, status, date, target }) => {
+export const addTaskItem = async ({ title, status, date, target }) => {
   const trimmed = title.trim();
   if (!trimmed) return;
-  const [fileName, pathLabel] = (target || "inbox.org|Inbox").split("|");
-  let targetFile = state.data.find((entry) => entry.file === fileName);
-  if (!targetFile) {
-    targetFile = { file: fileName, items: [] };
-    state.data.unshift(targetFile);
+  const [fileName] = (target || "inbox.org|Inbox").split("|");
+  const targetFile = state.data.find((entry) => entry.file === fileName);
+  const insertionId = pickInsertAfterId(targetFile?.items || []);
+
+  try {
+    if (insertionId) {
+      await insertHeadlineAfter({
+        path: fileName,
+        afterId: insertionId,
+        title: trimmed,
+      });
+      const newId = slugify(trimmed);
+      if (status) {
+        await updateHeadlineTodo({ path: fileName, id: newId, todo: status });
+      }
+      if (date) {
+        await updateHeadlineScheduled({
+          path: fileName,
+          id: newId,
+          scheduled: date,
+        });
+      }
+    } else {
+      const content = buildTaskContent({ title: trimmed, status, date });
+      await writeOrgFile({ path: fileName, content });
+    }
+  } catch (error) {
+    console.warn("Failed to add task", error);
+    return;
   }
-  const path = pathLabel ? pathLabel.split(" / ") : ["Inbox"];
-  const item = {
-    title: trimmed,
-    state: status || "TODO",
-    scheduled: date || null,
-    timestamps: date ? [date] : [],
-    tags: [],
-    path,
-    level: 1,
-    isTask: true,
-  };
-  targetFile.items.unshift(item);
+
+  const data = await loadOrgData();
+  if (Array.isArray(data)) {
+    state.data = data;
+  }
 };
