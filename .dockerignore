@@ -1,0 +1,8 @@
+.codex/
+.git/
+.github/
+.shared/
+dist/
+node_modules/
+org/
+tests/
