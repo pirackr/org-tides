@@ -15,7 +15,6 @@ export const bindEvents = ({
   taskTargetInput,
   saveToast,
   saveToastMessage,
-  saveToastAction,
   refresh,
   cycleTaskState,
   setTaskStateValue,
@@ -230,13 +229,6 @@ export const bindEvents = ({
         afterAddTask();
       }
       refresh();
-    });
-  }
-
-  if (saveToastAction) {
-    saveToastAction.addEventListener("click", () => {
-      hideSaveToast();
-      openTaskModal();
     });
   }
 

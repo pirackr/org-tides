@@ -42,7 +42,6 @@ const settingsSheet = document.getElementById("settingsSheet");
 const pathDepthSelect = document.getElementById("pathDepthSelect");
 const saveToast = document.getElementById("saveToast");
 const saveToastMessage = document.getElementById("saveToastMessage");
-const saveToastAction = document.getElementById("saveToastAction");
 const settingsToast = document.getElementById("settingsToast");
 
 const refreshUI = () =>
@@ -150,7 +149,6 @@ bindEvents({
   taskTargetInput,
   saveToast,
   saveToastMessage,
-  saveToastAction,
   refresh: refreshUI,
   cycleTaskState,
   setTaskStateValue,
