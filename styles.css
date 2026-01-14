@@ -165,6 +165,17 @@ button:hover {
   height: 14px;
 }
 
+.icon-button--lg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.icon-button--lg svg {
+  width: 18px;
+  height: 18px;
+}
+
 .top-nav {
   position: fixed;
   top: var(--top-nav-offset);
