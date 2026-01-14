@@ -112,6 +112,81 @@ a {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+.pull-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.72rem;
+  transform: translate(-50%, var(--pull-offset, -48px));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 8px 18px rgba(12, 10, 9, 0.08);
+}
+
+.pull-indicator.is-visible {
+  opacity: 1;
+}
+
+.pull-indicator.is-ready {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.pull-indicator__glyph {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pull-indicator__arrow {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.pull-indicator.is-ready .pull-indicator__arrow {
+  transform: rotate(180deg);
+}
+
+.pull-indicator__spinner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  opacity: 0;
+  animation: pull-spin 0.8s linear infinite;
+}
+
+.pull-indicator.is-loading .pull-indicator__spinner {
+  opacity: 1;
+}
+
+.pull-indicator.is-loading .pull-indicator__arrow {
+  opacity: 0;
+}
+
+@keyframes pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 button {

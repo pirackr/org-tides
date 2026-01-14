@@ -59,6 +59,18 @@
     </header>
 
     <main class="content">
+      <div class="pull-indicator" id="pullIndicator" role="status" aria-live="polite">
+        <span class="pull-indicator__glyph" aria-hidden="true">
+          <svg class="pull-indicator__arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 5l4 4-1.4 1.4-1.6-1.6V19h-2V8.8L9.4 10.4 8 9l4-4z"
+              fill="currentColor"
+            />
+          </svg>
+          <span class="pull-indicator__spinner" aria-hidden="true"></span>
+        </span>
+        <span class="pull-indicator__label" id="pullIndicatorLabel">Pull to refresh</span>
+      </div>
       <ul class="agenda" id="agendaList"></ul>
     </main>
 

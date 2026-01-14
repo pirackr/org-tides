@@ -3,7 +3,12 @@ import { buildSaveToastMessage } from "./ui.js";
 
 const PULL_REFRESH_THRESHOLD = 56;
 const PULL_REFRESH_MAX = 72;
-const PULL_REFRESH_SLOP = 6;
+const PULL_REFRESH_SLOP = 14;
+const PULL_INDICATOR_HIDDEN_OFFSET = -48;
+const PULL_INDICATOR_VISIBLE_OFFSET = -8;
+const PULL_LABEL = "Pull to refresh";
+const PULL_READY_LABEL = "Release to refresh";
+const PULL_LOADING_LABEL = "Refreshing...";
 
 export const shouldTriggerPullRefresh = ({
   deltaX = 0,
@@ -15,6 +20,47 @@ export const shouldTriggerPullRefresh = ({
   if (deltaY < threshold) return false;
   if (Math.abs(deltaY) <= Math.abs(deltaX) + PULL_REFRESH_SLOP) return false;
   return deltaY > 0;
+};
+
+export const getPullIndicatorState = ({
+  deltaX = 0,
+  deltaY = 0,
+  scrollTop = 0,
+  threshold = PULL_REFRESH_THRESHOLD,
+  max = PULL_REFRESH_MAX,
+} = {}) => {
+  if (scrollTop > 0) {
+    return {
+      isActive: false,
+      isReady: false,
+      label: PULL_LABEL,
+      offset: 0,
+    };
+  }
+  if (deltaY <= 0) {
+    return {
+      isActive: false,
+      isReady: false,
+      label: PULL_LABEL,
+      offset: 0,
+    };
+  }
+  if (Math.abs(deltaY) <= Math.abs(deltaX) + PULL_REFRESH_SLOP) {
+    return {
+      isActive: false,
+      isReady: false,
+      label: PULL_LABEL,
+      offset: 0,
+    };
+  }
+  const clamped = Math.min(max, deltaY);
+  const isReady = clamped >= threshold;
+  return {
+    isActive: true,
+    isReady,
+    label: isReady ? PULL_READY_LABEL : PULL_LABEL,
+    offset: Math.min(8, Math.max(0, clamped - threshold)),
+  };
 };
 
 export const bindEvents = ({
@@ -39,6 +85,8 @@ export const bindEvents = ({
   closeSettingsSheet,
   afterAddTask,
   onPullRefresh,
+  pullIndicator,
+  pullIndicatorLabel,
 }) => {
   const openTaskModal = () => {
     if (!taskModal) return;
@@ -67,6 +115,37 @@ export const bindEvents = ({
   let suppressClick = false;
   let saveToastTimer = null;
   let saveToastHideTimer = null;
+
+  const setPullIndicatorState = (state, deltaY = 0) => {
+    if (!pullIndicator) return;
+    const isLoading = pullRefreshInFlight;
+    const isVisible = isLoading || state?.isActive;
+    const label = isLoading ? PULL_LOADING_LABEL : state?.label || PULL_LABEL;
+    const paddedDelta = deltaY + (state?.offset || 0);
+    const clampedOffset = Math.min(
+      PULL_INDICATOR_VISIBLE_OFFSET,
+      PULL_INDICATOR_HIDDEN_OFFSET + Math.max(0, paddedDelta)
+    );
+    pullIndicator.classList.toggle("is-visible", isVisible);
+    pullIndicator.classList.toggle("is-ready", !isLoading && !!state?.isReady);
+    pullIndicator.classList.toggle("is-loading", isLoading);
+    pullIndicator.style.setProperty("--pull-offset", `${clampedOffset}px`);
+    if (pullIndicatorLabel) {
+      pullIndicatorLabel.textContent = label;
+    }
+  };
+
+  const resetPullIndicator = () => {
+    setPullIndicatorState(
+      {
+        isActive: false,
+        isReady: false,
+        label: PULL_LABEL,
+        offset: 0,
+      },
+      0
+    );
+  };
 
   const resetPullTransform = () => {
     if (!agendaList) return;
@@ -156,6 +235,7 @@ export const bindEvents = ({
         startX: touch.clientX,
         startY: touch.clientY,
       };
+      resetPullIndicator();
 
       const target = event.target.closest(".agenda__check");
       if (!target?.dataset.file) return;
@@ -207,6 +287,12 @@ export const bindEvents = ({
         agendaList.style.transform = `translateY(${clamped}px)`;
         pullState.deltaX = deltaX;
         pullState.deltaY = deltaY;
+        const indicatorState = getPullIndicatorState({
+          deltaX,
+          deltaY,
+          scrollTop: agendaList.scrollTop,
+        });
+        setPullIndicatorState(indicatorState, deltaY);
       },
       { passive: false }
     );
@@ -247,14 +333,24 @@ export const bindEvents = ({
         deltaY,
         scrollTop: agendaList.scrollTop,
       });
+      const indicatorState = getPullIndicatorState({
+        deltaX,
+        deltaY,
+        scrollTop: agendaList.scrollTop,
+      });
       pullState = null;
       resetPullTransform();
-      if (!shouldRefresh || !onPullRefresh || pullRefreshInFlight) return;
+      if (!shouldRefresh || !onPullRefresh || pullRefreshInFlight) {
+        resetPullIndicator();
+        return;
+      }
       pullRefreshInFlight = true;
+      setPullIndicatorState(indicatorState, PULL_REFRESH_THRESHOLD);
       try {
         await onPullRefresh();
       } finally {
         pullRefreshInFlight = false;
+        resetPullIndicator();
       }
     });
 
@@ -267,6 +363,7 @@ export const bindEvents = ({
       if (pullState) {
         pullState = null;
         resetPullTransform();
+        resetPullIndicator();
       }
       swipeState = null;
     });

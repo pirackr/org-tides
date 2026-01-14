@@ -46,6 +46,8 @@ const pickerSearch = document.getElementById("pickerSearch");
 const pickerList = document.getElementById("pickerList");
 const settingsButton = document.getElementById("settingsButton");
 const settingsSheet = document.getElementById("settingsSheet");
+const pullIndicator = document.getElementById("pullIndicator");
+const pullIndicatorLabel = document.getElementById("pullIndicatorLabel");
 const pathDepthOptions = document.getElementById("pathDepthOptions");
 const saveToast = document.getElementById("saveToast");
 const saveToastMessage = document.getElementById("saveToastMessage");
@@ -162,6 +164,8 @@ bindEvents({
   closePickerSheet,
   closeSettingsSheet,
   afterAddTask: setSavePickerDefault,
+  pullIndicator,
+  pullIndicatorLabel,
   onPullRefresh: async () => {
     await refreshData();
     setSavePickerDefault();
