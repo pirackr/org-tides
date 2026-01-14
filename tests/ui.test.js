@@ -42,3 +42,10 @@ test("settings check and submit icons are centered", async () => {
     /\.settings-field__option\.is-selected\s+\.settings-field__option-check::after\s*\{[^}]*width:\s*4px[^}]*height:\s*6px/
   );
 });
+
+test("pull indicator markup is present", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.ok(html.includes("id=\"pullIndicator\""));
+  assert.ok(html.includes("id=\"pullIndicatorLabel\""));
+});
