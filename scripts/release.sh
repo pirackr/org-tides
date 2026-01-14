@@ -56,9 +56,7 @@ window.ORG_TIDES_CONFIG = {
   apiBaseUrl: "https://todo.pirackr.xyz/api",
 };
 JS
-rm -rf "$DIST_ASSETS_DIR/icons" "$DIST_DIR/org"
 cp -R "$ROOT_DIR/assets/icons" "$DIST_ASSETS_DIR/icons"
-cp -R "$ROOT_DIR/org" "$DIST_DIR/org"
 
 
 
