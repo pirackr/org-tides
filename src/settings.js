@@ -7,6 +7,29 @@ const normalizePathDepthSetting = (value) => {
   return String(parsed);
 };
 
+const getPathDepthOptions = (pathDepthOptions) =>
+  Array.from(pathDepthOptions?.querySelectorAll?.("[data-path-depth]") || []);
+
+export const setPathDepthSelection = (pathDepthOptions, value) => {
+  const options = getPathDepthOptions(pathDepthOptions);
+  if (!options.length) return null;
+
+  const normalized = normalizePathDepthSetting(value);
+  let selected = options.find((option) => option.dataset.pathDepth === normalized);
+  if (!selected) {
+    selected = options[0];
+  }
+
+  options.forEach((option) => {
+    const isSelected = option === selected;
+    option.classList?.toggle("is-selected", isSelected);
+    option.setAttribute?.("aria-checked", isSelected ? "true" : "false");
+    option.tabIndex = isSelected ? 0 : -1;
+  });
+
+  return selected.dataset.pathDepth;
+};
+
 export const normalizeSettings = (settings = {}) => ({
   pathDepth: normalizePathDepthSetting(settings.pathDepth),
 });
@@ -55,16 +78,40 @@ export const findCloseSettingsTarget = (target) => {
   return null;
 };
 
+export const findPathDepthOption = (target, container) => {
+  let node = target;
+  while (node) {
+    if (node.dataset?.pathDepth) {
+      return node;
+    }
+    if (node === container) {
+      break;
+    }
+    node = node.parentElement;
+  }
+  return null;
+};
+
 export const initSettings = ({
   settingsButton,
   settingsSheet,
-  pathDepthSelect,
+  pathDepthOptions,
   onChange,
 }) => {
+  const applyPathDepthChange = (nextValue) => {
+    const nextSelection = setPathDepthSelection(pathDepthOptions, nextValue);
+    if (onChange && nextSelection) {
+      onChange(nextSelection);
+    }
+  };
+
   const openSettingsSheet = () => {
     if (!settingsSheet) return;
     settingsSheet.classList.remove("hidden");
-    pathDepthSelect?.focus();
+    const selectedOption =
+      pathDepthOptions?.querySelector(".settings-field__option.is-selected") ||
+      pathDepthOptions?.querySelector("[data-path-depth]");
+    selectedOption?.focus();
   };
 
   const closeSettingsSheet = () => {
@@ -86,13 +133,49 @@ export const initSettings = ({
     });
   }
 
-  if (pathDepthSelect) {
-    pathDepthSelect.addEventListener("change", (event) => {
-      const nextValue = normalizePathDepthSetting(event.target.value);
-      pathDepthSelect.value = nextValue;
-      if (onChange) {
-        onChange(nextValue);
+  if (pathDepthOptions) {
+    pathDepthOptions.addEventListener("click", (event) => {
+      const option = findPathDepthOption(event.target, pathDepthOptions);
+      if (!option) return;
+      applyPathDepthChange(option.dataset.pathDepth);
+    });
+
+    pathDepthOptions.addEventListener("keydown", (event) => {
+      const option = findPathDepthOption(event.target, pathDepthOptions);
+      if (!option) return;
+      const options = getPathDepthOptions(pathDepthOptions);
+      if (!options.length) return;
+      const currentIndex = options.indexOf(option);
+      let nextIndex = currentIndex;
+
+      switch (event.key) {
+        case "ArrowRight":
+        case "ArrowDown":
+          nextIndex = (currentIndex + 1) % options.length;
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          nextIndex = (currentIndex - 1 + options.length) % options.length;
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = options.length - 1;
+          break;
+        case " ":
+        case "Enter":
+          event.preventDefault();
+          applyPathDepthChange(option.dataset.pathDepth);
+          return;
+        default:
+          return;
       }
+
+      event.preventDefault();
+      const nextOption = options[nextIndex];
+      applyPathDepthChange(nextOption.dataset.pathDepth);
+      nextOption.focus();
     });
   }
 

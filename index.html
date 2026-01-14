@@ -222,12 +222,52 @@
           <label class="settings-field">
             <span class="settings-field__label">Path depth</span>
             <span class="settings-field__hint">Limit to the first N folder levels.</span>
-            <select id="pathDepthSelect" class="settings-field__select" aria-label="Path depth">
-              <option value="all">All levels</option>
-              <option value="1">1 level</option>
-              <option value="2">2 levels</option>
-              <option value="3">3 levels</option>
-            </select>
+            <div id="pathDepthOptions" class="settings-field__options" role="radiogroup" aria-label="Path depth">
+              <button
+                class="settings-field__option"
+                type="button"
+                data-path-depth="all"
+                role="radio"
+                aria-checked="false"
+                tabindex="-1"
+              >
+                <span class="settings-field__option-label">All levels</span>
+                <span class="settings-field__option-check" aria-hidden="true"></span>
+              </button>
+              <button
+                class="settings-field__option"
+                type="button"
+                data-path-depth="1"
+                role="radio"
+                aria-checked="false"
+                tabindex="-1"
+              >
+                <span class="settings-field__option-label">1 level</span>
+                <span class="settings-field__option-check" aria-hidden="true"></span>
+              </button>
+              <button
+                class="settings-field__option"
+                type="button"
+                data-path-depth="2"
+                role="radio"
+                aria-checked="false"
+                tabindex="-1"
+              >
+                <span class="settings-field__option-label">2 levels</span>
+                <span class="settings-field__option-check" aria-hidden="true"></span>
+              </button>
+              <button
+                class="settings-field__option"
+                type="button"
+                data-path-depth="3"
+                role="radio"
+                aria-checked="false"
+                tabindex="-1"
+              >
+                <span class="settings-field__option-label">3 levels</span>
+                <span class="settings-field__option-check" aria-hidden="true"></span>
+              </button>
+            </div>
           </label>
         </div>
       </div>

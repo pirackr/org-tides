@@ -11,7 +11,13 @@ import {
 import { buildSettingsToastMessage, refresh } from "./ui.js";
 import { initPicker } from "./picker.js";
 import { bindEvents } from "./events.js";
-import { initSettings, loadSettings, parsePathDepth, saveSettings } from "./settings.js";
+import {
+  initSettings,
+  loadSettings,
+  parsePathDepth,
+  saveSettings,
+  setPathDepthSelection,
+} from "./settings.js";
 
 // GraphQL endpoint resolves from window location; defaults to http://localhost:8080/.
 // Expected responses: orgFiles { items }, orgFile(path) { headlines { id level title todo tags scheduled children { ... } } }.
@@ -40,7 +46,7 @@ const pickerSearch = document.getElementById("pickerSearch");
 const pickerList = document.getElementById("pickerList");
 const settingsButton = document.getElementById("settingsButton");
 const settingsSheet = document.getElementById("settingsSheet");
-const pathDepthSelect = document.getElementById("pathDepthSelect");
+const pathDepthOptions = document.getElementById("pathDepthOptions");
 const saveToast = document.getElementById("saveToast");
 const saveToastMessage = document.getElementById("saveToastMessage");
 const settingsToast = document.getElementById("settingsToast");
@@ -55,9 +61,7 @@ const refreshUI = () =>
 
 const settings = loadSettings();
 state.pathDepth = parsePathDepth(settings.pathDepth);
-if (pathDepthSelect) {
-  pathDepthSelect.value = settings.pathDepth;
-}
+setPathDepthSelection(pathDepthOptions, settings.pathDepth);
 
 const setSavePickerDefault = () => {
   if (!taskTargetInput || !savePickerValue) return;
@@ -120,7 +124,7 @@ const { closePickerSheet } = initPicker({
 const { closeSettingsSheet } = initSettings({
   settingsButton,
   settingsSheet,
-  pathDepthSelect,
+  pathDepthOptions,
   onChange: async (nextDepth) => {
     state.pathDepth = parsePathDepth(nextDepth);
     saveSettings({ pathDepth: nextDepth });
