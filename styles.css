@@ -434,6 +434,9 @@ button:hover {
   margin-left: auto;
   background: var(--ink);
   color: var(--bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal__submit svg {
@@ -667,6 +670,7 @@ button:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .settings-field__option.is-selected {
@@ -685,7 +689,10 @@ button:hover {
   height: 10px;
   border-right: 2px solid #fafaf9;
   border-bottom: 2px solid #fafaf9;
-  transform: rotate(45deg);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -60%) rotate(45deg);
   display: block;
 }
 
