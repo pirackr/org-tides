@@ -114,3 +114,18 @@ test("resolveGraphQLEndpoint derives origin in prod", () => {
     }
   );
 });
+
+test("resolveGraphQLEndpoint prefers config api base url", () => {
+  withWindow(
+    {
+      ORG_TIDES_CONFIG: { apiBaseUrl: "https://todo.pirackr.xyz/api" },
+      location: { hostname: "tides.example", origin: "https://tides.example" },
+    },
+    () => {
+      assert.equal(
+        resolveGraphQLEndpoint(),
+        "https://todo.pirackr.xyz/api/"
+      );
+    }
+  );
+});

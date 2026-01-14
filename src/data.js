@@ -9,6 +9,10 @@ export const resolveGraphQLEndpoint = () => {
   if (typeof window === "undefined") {
     return DEFAULT_GRAPHQL_ENDPOINT;
   }
+  const configOverride = window.ORG_TIDES_CONFIG?.apiBaseUrl?.trim();
+  if (configOverride) {
+    return ensureTrailingSlash(configOverride);
+  }
   const override = window.ORG_BACKEND_URL?.trim();
   if (override) {
     return ensureTrailingSlash(override);
