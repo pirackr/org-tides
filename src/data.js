@@ -1,6 +1,30 @@
 import { STATUS_ORDER, state, viewConfig } from "./state.js";
 
-const GRAPHQL_ENDPOINT = "http://localhost:8080/";
+const DEFAULT_GRAPHQL_ENDPOINT = "http://localhost:8080/";
+
+const ensureTrailingSlash = (value) =>
+  value.endsWith("/") ? value : `${value}/`;
+
+export const resolveGraphQLEndpoint = () => {
+  if (typeof window === "undefined") {
+    return DEFAULT_GRAPHQL_ENDPOINT;
+  }
+  const override = window.ORG_BACKEND_URL?.trim();
+  if (override) {
+    return ensureTrailingSlash(override);
+  }
+  const hostname = window.location?.hostname;
+  const origin = window.location?.origin;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return DEFAULT_GRAPHQL_ENDPOINT;
+  }
+  if (origin) {
+    return ensureTrailingSlash(origin);
+  }
+  return DEFAULT_GRAPHQL_ENDPOINT;
+};
+
+const GRAPHQL_ENDPOINT = resolveGraphQLEndpoint();
 const HEADLINE_FIELDS = "id level title todo tags scheduled";
 const MAX_HEADLINE_DEPTH = 6;
 

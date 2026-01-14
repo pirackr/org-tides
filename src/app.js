@@ -11,7 +11,7 @@ import { refresh } from "./ui.js";
 import { initPicker } from "./picker.js";
 import { bindEvents } from "./events.js";
 
-// GraphQL endpoint: http://localhost:8080/.
+// GraphQL endpoint resolves from window location; defaults to http://localhost:8080/.
 // Expected responses: orgFiles { items }, orgFile(path) { headlines { id level title todo tags scheduled children { ... } } }.
 const agendaList = document.getElementById("agendaList");
 const appTitle = document.querySelector(".top-nav__title");
