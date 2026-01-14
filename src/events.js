@@ -1,6 +1,22 @@
 import { state } from "./state.js";
 import { buildSaveToastMessage } from "./ui.js";
 
+const PULL_REFRESH_THRESHOLD = 56;
+const PULL_REFRESH_MAX = 72;
+const PULL_REFRESH_SLOP = 6;
+
+export const shouldTriggerPullRefresh = ({
+  deltaX = 0,
+  deltaY = 0,
+  scrollTop = 0,
+  threshold = PULL_REFRESH_THRESHOLD,
+} = {}) => {
+  if (scrollTop > 0) return false;
+  if (deltaY < threshold) return false;
+  if (Math.abs(deltaY) <= Math.abs(deltaX) + PULL_REFRESH_SLOP) return false;
+  return deltaY > 0;
+};
+
 export const bindEvents = ({
   agendaList,
   viewButtons,
@@ -22,6 +38,7 @@ export const bindEvents = ({
   closePickerSheet,
   closeSettingsSheet,
   afterAddTask,
+  onPullRefresh,
 }) => {
   const openTaskModal = () => {
     if (!taskModal) return;
@@ -45,9 +62,21 @@ export const bindEvents = ({
   };
 
   let swipeState = null;
+  let pullState = null;
+  let pullRefreshInFlight = false;
   let suppressClick = false;
   let saveToastTimer = null;
   let saveToastHideTimer = null;
+
+  const resetPullTransform = () => {
+    if (!agendaList) return;
+    agendaList.style.transition = "transform 0.2s ease";
+    agendaList.style.transform = "translateY(0)";
+    window.setTimeout(() => {
+      if (!agendaList) return;
+      agendaList.style.transition = "";
+    }, 220);
+  };
 
   const hideSaveToast = () => {
     if (!saveToast) return;
@@ -120,16 +149,24 @@ export const bindEvents = ({
     });
 
     agendaList.addEventListener("touchstart", (event) => {
+      if (pullRefreshInFlight) return;
+      if (agendaList.scrollTop > 0) return;
+      const touch = event.touches[0];
+      pullState = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+      };
+
       const target = event.target.closest(".agenda__check");
       if (!target?.dataset.file) return;
       const item = target.closest(".agenda__item");
       if (!item) return;
-      const touch = event.touches[0];
+      const swipeTouch = event.touches[0];
       swipeState = {
         target,
         item,
-        startX: touch.clientX,
-        startY: touch.clientY,
+        startX: swipeTouch.clientX,
+        startY: swipeTouch.clientY,
       };
     });
 
@@ -147,6 +184,29 @@ export const bindEvents = ({
           swipeState.item.classList.add("is-swiping");
           swipeState.target.style.transform = `translateX(${clamped}px)`;
         }
+      },
+      { passive: false }
+    );
+
+    agendaList.addEventListener(
+      "touchmove",
+      (event) => {
+        if (!pullState || pullRefreshInFlight) return;
+        if (agendaList.scrollTop > 0) {
+          pullState = null;
+          return;
+        }
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - pullState.startX;
+        const deltaY = touch.clientY - pullState.startY;
+        if (deltaY <= 0) return;
+        if (Math.abs(deltaY) <= Math.abs(deltaX) + PULL_REFRESH_SLOP) return;
+        event.preventDefault();
+        const clamped = Math.min(PULL_REFRESH_MAX, deltaY);
+        agendaList.style.transition = "transform 0s";
+        agendaList.style.transform = `translateY(${clamped}px)`;
+        pullState.deltaX = deltaX;
+        pullState.deltaY = deltaY;
       },
       { passive: false }
     );
@@ -175,11 +235,38 @@ export const bindEvents = ({
       }
     });
 
+    agendaList.addEventListener("touchend", async (event) => {
+      if (!pullState) return;
+      const touch = event.changedTouches?.[0];
+      const deltaX =
+        touch?.clientX - pullState.startX || pullState.deltaX || 0;
+      const deltaY =
+        touch?.clientY - pullState.startY || pullState.deltaY || 0;
+      const shouldRefresh = shouldTriggerPullRefresh({
+        deltaX,
+        deltaY,
+        scrollTop: agendaList.scrollTop,
+      });
+      pullState = null;
+      resetPullTransform();
+      if (!shouldRefresh || !onPullRefresh || pullRefreshInFlight) return;
+      pullRefreshInFlight = true;
+      try {
+        await onPullRefresh();
+      } finally {
+        pullRefreshInFlight = false;
+      }
+    });
+
     agendaList.addEventListener("touchcancel", () => {
       if (swipeState?.item) {
         swipeState.item.classList.remove("is-swiping");
         swipeState.item.classList.remove("is-revealed");
         swipeState.target.style.transform = "translateX(0)";
+      }
+      if (pullState) {
+        pullState = null;
+        resetPullTransform();
       }
       swipeState = null;
     });

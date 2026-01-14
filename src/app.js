@@ -162,6 +162,11 @@ bindEvents({
   closePickerSheet,
   closeSettingsSheet,
   afterAddTask: setSavePickerDefault,
+  onPullRefresh: async () => {
+    await refreshData();
+    setSavePickerDefault();
+    refreshUI();
+  },
 });
 
 const initializeData = async () => {
