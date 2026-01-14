@@ -8,6 +8,7 @@ import {
   buildTaskContent,
   pickInsertAfterId,
   resolveGraphQLEndpoint,
+  limitPathDepth,
 } from "../src/data.js";
 
 test("buildHeadlineSelection nests children", () => {
@@ -70,6 +71,13 @@ test("buildTaskContent renders org heading content", () => {
     date: "2024-01-02",
   });
   assert.equal(content, "* TODO Launch plan\nSCHEDULED: <2024-01-02>\n");
+});
+
+test("limitPathDepth trims path segments", () => {
+  const path = ["Work", "Archive", "Notes"];
+  assert.deepEqual(limitPathDepth(path, 1), ["Work"]);
+  assert.deepEqual(limitPathDepth(path, 2), ["Work", "Archive"]);
+  assert.deepEqual(limitPathDepth(path, null), path);
 });
 
 test("pickInsertAfterId prefers last top-level headline", () => {
