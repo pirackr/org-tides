@@ -10,7 +10,9 @@ import {
   resolveGraphQLEndpoint,
   limitPathDepth,
   filterOrgFilesByDepth,
+  refreshData,
 } from "../src/data.js";
+import { state } from "../src/state.js";
 
 test("buildHeadlineSelection nests children", () => {
   const selection = buildHeadlineSelection(1);
@@ -112,6 +114,17 @@ test("pickInsertAfterId prefers last top-level headline", () => {
   assert.equal(pickInsertAfterId(items), "c");
   assert.equal(pickInsertAfterId([{ id: "x", level: 2 }]), "x");
   assert.equal(pickInsertAfterId([]), null);
+});
+
+test("refreshData updates state with loader results", async () => {
+  const previous = state.data;
+  const nextData = [{ file: "inbox.org", items: [] }];
+  try {
+    await refreshData({ loader: async () => nextData, fallback: [] });
+    assert.deepEqual(state.data, nextData);
+  } finally {
+    state.data = previous;
+  }
 });
 
 const withWindow = (nextWindow, fn) => {
