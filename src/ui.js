@@ -1,6 +1,16 @@
 import { state, viewConfig } from "./state.js";
 import { getAgendaItems, getNextItems, limitPathDepth } from "./data.js";
 
+export const buildSaveToastMessage = (target) => {
+  if (!target) return "Saved";
+  const [file, location] = String(target).split("|");
+  const trimmedFile = (file || "").trim();
+  const trimmedLocation = (location || "").trim();
+  if (!trimmedFile) return "Saved";
+  if (!trimmedLocation) return `Saved to ${trimmedFile}`;
+  return `Saved to ${trimmedFile} · ${trimmedLocation}`;
+};
+
 export const renderAgenda = (agendaList) => {
   if (!agendaList) return;
   const items = getAgendaItems();
