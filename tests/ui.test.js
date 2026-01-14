@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import { buildSaveToastMessage } from "../src/ui.js";
+import { buildSaveToastMessage, buildSettingsToastMessage } from "../src/ui.js";
 
 test("buildSaveToastMessage formats save targets", () => {
   assert.equal(
@@ -9,4 +9,9 @@ test("buildSaveToastMessage formats save targets", () => {
   );
   assert.equal(buildSaveToastMessage("notes.org"), "Saved to notes.org");
   assert.equal(buildSaveToastMessage(""), "Saved");
+});
+
+test("buildSettingsToastMessage defaults to generic copy", () => {
+  assert.equal(buildSettingsToastMessage(), "Settings saved");
+  assert.equal(buildSettingsToastMessage("Path depth"), "Path depth saved");
 });

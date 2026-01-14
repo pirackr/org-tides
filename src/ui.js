@@ -11,6 +11,11 @@ export const buildSaveToastMessage = (target) => {
   return `Saved to ${trimmedFile} · ${trimmedLocation}`;
 };
 
+export const buildSettingsToastMessage = (label) => {
+  const trimmed = (label || "").trim();
+  return trimmed ? `${trimmed} saved` : "Settings saved";
+};
+
 export const renderAgenda = (agendaList) => {
   if (!agendaList) return;
   const items = getAgendaItems();
