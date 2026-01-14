@@ -7,7 +7,7 @@ import {
   cycleTaskState,
   setTaskStateValue,
 } from "./data.js";
-import { refresh } from "./ui.js";
+import { buildSettingsToastMessage, refresh } from "./ui.js";
 import { initPicker } from "./picker.js";
 import { bindEvents } from "./events.js";
 import { initSettings, loadSettings, parsePathDepth, saveSettings } from "./settings.js";
@@ -43,6 +43,7 @@ const pathDepthSelect = document.getElementById("pathDepthSelect");
 const saveToast = document.getElementById("saveToast");
 const saveToastMessage = document.getElementById("saveToastMessage");
 const saveToastAction = document.getElementById("saveToastAction");
+const settingsToast = document.getElementById("settingsToast");
 
 const refreshUI = () =>
   refresh({
@@ -64,6 +65,43 @@ const setSavePickerDefault = () => {
   const nextValue = targets.length ? targets[0][0] : "inbox.org|Inbox";
   taskTargetInput.value = nextValue;
   savePickerValue.textContent = nextValue.split("|")[1]?.split(" / ").slice(-1)[0] || "Inbox";
+};
+
+let settingsToastTimer = null;
+let settingsToastHideTimer = null;
+
+const hideSettingsToast = () => {
+  if (!settingsToast) return;
+  settingsToast.classList.remove("is-visible");
+  if (settingsToastTimer) {
+    window.clearTimeout(settingsToastTimer);
+    settingsToastTimer = null;
+  }
+  if (settingsToastHideTimer) {
+    window.clearTimeout(settingsToastHideTimer);
+  }
+  settingsToastHideTimer = window.setTimeout(() => {
+    settingsToast.classList.add("hidden");
+  }, 200);
+};
+
+const showSettingsToast = (label) => {
+  if (!settingsToast) return;
+  settingsToast.textContent = buildSettingsToastMessage(label);
+  settingsToast.classList.remove("hidden");
+  if (settingsToastHideTimer) {
+    window.clearTimeout(settingsToastHideTimer);
+    settingsToastHideTimer = null;
+  }
+  requestAnimationFrame(() => {
+    settingsToast.classList.add("is-visible");
+  });
+  if (settingsToastTimer) {
+    window.clearTimeout(settingsToastTimer);
+  }
+  settingsToastTimer = window.setTimeout(() => {
+    hideSettingsToast();
+  }, 2200);
 };
 
 const { closePickerSheet } = initPicker({
@@ -88,8 +126,15 @@ const { closeSettingsSheet } = initSettings({
     saveSettings({ pathDepth: nextDepth });
     setSavePickerDefault();
     refreshUI();
+    showSettingsToast();
   },
 });
+
+if (settingsButton) {
+  settingsButton.addEventListener("click", () => {
+    hideSettingsToast();
+  });
+}
 
 bindEvents({
   agendaList,
