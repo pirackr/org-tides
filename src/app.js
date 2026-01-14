@@ -40,6 +40,9 @@ const pickerList = document.getElementById("pickerList");
 const settingsButton = document.getElementById("settingsButton");
 const settingsSheet = document.getElementById("settingsSheet");
 const pathDepthSelect = document.getElementById("pathDepthSelect");
+const saveToast = document.getElementById("saveToast");
+const saveToastMessage = document.getElementById("saveToastMessage");
+const saveToastAction = document.getElementById("saveToastAction");
 
 const refreshUI = () =>
   refresh({
@@ -100,6 +103,9 @@ bindEvents({
   taskDateInput,
   taskDateValue,
   taskTargetInput,
+  saveToast,
+  saveToastMessage,
+  saveToastAction,
   refresh: refreshUI,
   cycleTaskState,
   setTaskStateValue,

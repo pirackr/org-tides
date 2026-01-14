@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { buildSaveToastMessage } from "./ui.js";
 
 export const bindEvents = ({
   agendaList,
@@ -12,6 +13,9 @@ export const bindEvents = ({
   taskDateInput,
   taskDateValue,
   taskTargetInput,
+  saveToast,
+  saveToastMessage,
+  saveToastAction,
   refresh,
   cycleTaskState,
   setTaskStateValue,
@@ -43,6 +47,42 @@ export const bindEvents = ({
 
   let swipeState = null;
   let suppressClick = false;
+  let saveToastTimer = null;
+  let saveToastHideTimer = null;
+
+  const hideSaveToast = () => {
+    if (!saveToast) return;
+    saveToast.classList.remove("is-visible");
+    if (saveToastTimer) {
+      window.clearTimeout(saveToastTimer);
+      saveToastTimer = null;
+    }
+    if (saveToastHideTimer) {
+      window.clearTimeout(saveToastHideTimer);
+    }
+    saveToastHideTimer = window.setTimeout(() => {
+      saveToast.classList.add("hidden");
+    }, 200);
+  };
+
+  const showSaveToast = (targetValue) => {
+    if (!saveToast || !saveToastMessage) return;
+    saveToastMessage.textContent = buildSaveToastMessage(targetValue);
+    saveToast.classList.remove("hidden");
+    if (saveToastHideTimer) {
+      window.clearTimeout(saveToastHideTimer);
+      saveToastHideTimer = null;
+    }
+    requestAnimationFrame(() => {
+      saveToast.classList.add("is-visible");
+    });
+    if (saveToastTimer) {
+      window.clearTimeout(saveToastTimer);
+    }
+    saveToastTimer = window.setTimeout(() => {
+      hideSaveToast();
+    }, 3600);
+  };
 
   if (agendaList) {
     agendaList.addEventListener("click", async (event) => {
@@ -177,17 +217,26 @@ export const bindEvents = ({
   if (taskForm) {
     taskForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const targetValue = taskTargetInput?.value || "inbox.org|Inbox";
       await addTaskItem({
         title: taskTitleInput?.value || "",
         status: taskStatusInput?.value || "TODO",
         date: taskDateInput?.value || "",
-        target: taskTargetInput?.value || "inbox.org|Inbox",
+        target: targetValue,
       });
       closeTaskModal();
+      showSaveToast(targetValue);
       if (afterAddTask) {
         afterAddTask();
       }
       refresh();
+    });
+  }
+
+  if (saveToastAction) {
+    saveToastAction.addEventListener("click", () => {
+      hideSaveToast();
+      openTaskModal();
     });
   }
 
@@ -204,6 +253,7 @@ export const bindEvents = ({
       closePickerSheet?.();
       closeSettingsSheet?.();
       closeTaskModal();
+      hideSaveToast();
     }
   });
 
