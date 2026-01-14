@@ -8,3 +8,10 @@ test("Dockerfile uses nginx and exposes port 80", () => {
   assert.match(contents, /^FROM\s+nginx:alpine/m);
   assert.match(contents, /^EXPOSE\s+80/m);
 });
+
+test("Dockerfile builds minified release assets", () => {
+  const dockerfileUrl = new URL("../Dockerfile", import.meta.url);
+  const contents = readFileSync(dockerfileUrl, "utf8");
+  assert.match(contents, /scripts\/release\.sh/);
+  assert.match(contents, /COPY\s+--from=.*\s+\/app\/dist\s+\/usr\/share\/nginx\/html/);
+});
