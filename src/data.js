@@ -140,6 +140,14 @@ export const slugify = (value) => {
 
 const uniqueTags = (tags) => [...new Set(tags.filter(Boolean))];
 
+export const limitPathDepth = (path = [], depth) => {
+  if (!Array.isArray(path)) return [];
+  if (!Number.isInteger(depth) || depth < 1) {
+    return [...path];
+  }
+  return path.slice(0, depth);
+};
+
 export const mapHeadlinesToItems = (headlines = []) => {
   const items = [];
   const walk = (nodes, ancestors, topTitle) => {
@@ -372,7 +380,9 @@ export const buildSaveTargets = () => {
   state.data.forEach((fileEntry) => {
     const fileName = fileEntry.file;
     fileEntry.items.forEach((item) => {
-      const pathParts = item.path?.length ? item.path : ["Inbox"];
+      const rawPath = item.path?.length ? item.path : ["Inbox"];
+      const limitedPath = limitPathDepth(rawPath, state.pathDepth);
+      const pathParts = limitedPath.length ? limitedPath : ["Inbox"];
       const prefixes = [];
       pathParts.forEach((part) => {
         if (!prefixes.length) {

@@ -1,5 +1,5 @@
 import { state, viewConfig } from "./state.js";
-import { getAgendaItems, getNextItems } from "./data.js";
+import { getAgendaItems, getNextItems, limitPathDepth } from "./data.js";
 
 export const renderAgenda = (agendaList) => {
   if (!agendaList) return;
@@ -109,12 +109,11 @@ export const renderAgenda = (agendaList) => {
 
   const grouped = new Map();
   items.forEach((item) => {
-    const label = item.path.length
-      ? `${item.file} · ${item.path.join(" / ")}`
-      : item.file;
-    const key = `${item.file}|${item.path.join("/")}`;
+    const path = limitPathDepth(item.path, state.pathDepth);
+    const label = path.length ? `${item.file} · ${path.join(" / ")}` : item.file;
+    const key = `${item.file}|${path.join("/")}`;
     if (!grouped.has(key)) {
-      grouped.set(key, { label, items: [], path: item.path, file: item.file });
+      grouped.set(key, { label, items: [], path, file: item.file });
     }
     grouped.get(key).items.push(item);
   });
