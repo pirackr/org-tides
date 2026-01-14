@@ -39,6 +39,6 @@ test("settings check and submit icons are centered", async () => {
   );
   assert.match(
     css,
-    /\.settings-field__option\.is-selected\s+\.settings-field__option-check::after\s*\{[^}]*width:\s*5px[^}]*height:\s*8px/
+    /\.settings-field__option\.is-selected\s+\.settings-field__option-check::after\s*\{[^}]*width:\s*4px[^}]*height:\s*6px/
   );
 });
