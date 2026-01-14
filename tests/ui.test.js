@@ -12,6 +12,6 @@ test("buildSaveToastMessage formats save targets", () => {
 });
 
 test("buildSettingsToastMessage defaults to generic copy", () => {
-  assert.equal(buildSettingsToastMessage(), "Settings saved");
+  assert.equal(buildSettingsToastMessage(), "Saved");
   assert.equal(buildSettingsToastMessage("Path depth"), "Path depth saved");
 });

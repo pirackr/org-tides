@@ -13,7 +13,7 @@ export const buildSaveToastMessage = (target) => {
 
 export const buildSettingsToastMessage = (label) => {
   const trimmed = (label || "").trim();
-  return trimmed ? `${trimmed} saved` : "Settings saved";
+  return trimmed ? `${trimmed} saved` : "Saved";
 };
 
 export const renderAgenda = (agendaList) => {
