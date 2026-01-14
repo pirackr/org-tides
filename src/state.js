@@ -3,6 +3,7 @@ export const STATUS_ORDER = ["TODO", "WIP", "DONE"];
 export const state = {
   data: [],
   groupByPath: true,
+  pathDepth: null,
   view: "today",
   query: "",
 };

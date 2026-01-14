@@ -36,11 +36,18 @@
         </div>
       </div>
       <div class="top-nav__actions">
-        <button class="icon-button" type="button" aria-label="More" title="More">
+        <button
+          class="icon-button"
+          type="button"
+          id="settingsButton"
+          aria-label="Settings"
+          title="Settings"
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="6" r="2.2" fill="currentColor" />
-            <circle cx="12" cy="12" r="2.2" fill="currentColor" />
-            <circle cx="12" cy="18" r="2.2" fill="currentColor" />
+            <path
+              d="M19.4 12c0-.3-.02-.6-.05-.9l2.02-1.57-1.5-2.6-2.42.8c-.46-.37-.97-.69-1.55-.9L15.6 3h-3.2l-.4 2.84c-.58.21-1.09.53-1.55.9l-2.42-.8-1.5 2.6 2.02 1.57c-.03.3-.05.6-.05.9s.02.6.05.9l-2.02 1.57 1.5 2.6 2.42-.8c.46.37.97.69 1.55.9l.4 2.84h3.2l.4-2.84c.58-.21 1.09-.53 1.55-.9l2.42.8 1.5-2.6-2.02-1.57c.03-.3.05-.6.05-.9zm-7.4 3.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"
+              fill="currentColor"
+            />
           </svg>
         </button>
       </div>
@@ -184,6 +191,43 @@
           />
         </div>
         <div class="picker-sheet__list" id="pickerList" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="settings-sheet hidden" id="settingsSheet" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="settings-sheet__backdrop" data-close-settings="true"></div>
+      <div class="settings-sheet__panel">
+        <div class="settings-sheet__header">
+          <div>
+            <h2 class="settings-sheet__title">Settings</h2>
+            <p class="settings-sheet__subtitle">Control how headings are grouped.</p>
+          </div>
+          <button
+            class="icon-button settings-sheet__close"
+            type="button"
+            data-close-settings="true"
+            aria-label="Close settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6.4 5L5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="settings-sheet__content">
+          <label class="settings-field">
+            <span class="settings-field__label">Path depth</span>
+            <span class="settings-field__hint">Limit grouping to the first N heading levels.</span>
+            <select id="pathDepthSelect" class="settings-field__select" aria-label="Path depth">
+              <option value="all">All levels</option>
+              <option value="1">1 level</option>
+              <option value="2">2 levels</option>
+              <option value="3">3 levels</option>
+            </select>
+          </label>
+        </div>
       </div>
     </div>
 

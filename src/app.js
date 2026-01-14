@@ -10,6 +10,7 @@ import {
 import { refresh } from "./ui.js";
 import { initPicker } from "./picker.js";
 import { bindEvents } from "./events.js";
+import { initSettings, loadSettings, parsePathDepth, saveSettings } from "./settings.js";
 
 // GraphQL endpoint resolves from window location; defaults to http://localhost:8080/.
 // Expected responses: orgFiles { items }, orgFile(path) { headlines { id level title todo tags scheduled children { ... } } }.
@@ -36,6 +37,23 @@ const savePickerValue = savePicker?.querySelector(".save-picker__value");
 const pickerSheet = document.getElementById("pickerSheet");
 const pickerSearch = document.getElementById("pickerSearch");
 const pickerList = document.getElementById("pickerList");
+const settingsButton = document.getElementById("settingsButton");
+const settingsSheet = document.getElementById("settingsSheet");
+const pathDepthSelect = document.getElementById("pathDepthSelect");
+
+const refreshUI = () =>
+  refresh({
+    agendaList,
+    appHeader,
+    viewButtons,
+    appTitle,
+  });
+
+const settings = loadSettings();
+state.pathDepth = parsePathDepth(settings.pathDepth);
+if (pathDepthSelect) {
+  pathDepthSelect.value = settings.pathDepth;
+}
 
 const setSavePickerDefault = () => {
   if (!taskTargetInput || !savePickerValue) return;
@@ -58,6 +76,18 @@ const { closePickerSheet } = initPicker({
   savePickerValue,
 });
 
+const { closeSettingsSheet } = initSettings({
+  settingsButton,
+  settingsSheet,
+  pathDepthSelect,
+  onChange: (nextDepth) => {
+    state.pathDepth = parsePathDepth(nextDepth);
+    saveSettings({ pathDepth: nextDepth });
+    setSavePickerDefault();
+    refreshUI();
+  },
+});
+
 bindEvents({
   agendaList,
   viewButtons,
@@ -70,17 +100,12 @@ bindEvents({
   taskDateInput,
   taskDateValue,
   taskTargetInput,
-  refresh: () =>
-    refresh({
-      agendaList,
-      appHeader,
-      viewButtons,
-      appTitle,
-    }),
+  refresh: refreshUI,
   cycleTaskState,
   setTaskStateValue,
   addTaskItem,
   closePickerSheet,
+  closeSettingsSheet,
   afterAddTask: setSavePickerDefault,
 });
 
@@ -90,12 +115,7 @@ const initializeData = async () => {
     ? data
     : JSON.parse(JSON.stringify(FALLBACK_DATA));
   setSavePickerDefault();
-  refresh({
-    agendaList,
-    appHeader,
-    viewButtons,
-    appTitle,
-  });
+  refreshUI();
 };
 
 initializeData();

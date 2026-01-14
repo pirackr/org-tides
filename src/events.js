@@ -17,6 +17,7 @@ export const bindEvents = ({
   setTaskStateValue,
   addTaskItem,
   closePickerSheet,
+  closeSettingsSheet,
   afterAddTask,
 }) => {
   const openTaskModal = () => {
@@ -201,6 +202,7 @@ export const bindEvents = ({
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closePickerSheet?.();
+      closeSettingsSheet?.();
       closeTaskModal();
     }
   });
