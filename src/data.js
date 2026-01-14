@@ -250,6 +250,17 @@ export const loadOrgData = async () => {
   }
 };
 
+export const refreshData = async ({
+  loader = loadOrgData,
+  fallback = FALLBACK_DATA,
+} = {}) => {
+  const data = await loader();
+  state.data = Array.isArray(data)
+    ? data
+    : JSON.parse(JSON.stringify(fallback));
+  return state.data;
+};
+
 const updateHeadlineTodo = async ({ path, id, todo }) =>
   requestGraphQL(UPDATE_HEADLINE_TODO_MUTATION, { path, id, todo });
 

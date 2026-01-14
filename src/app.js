@@ -6,6 +6,7 @@ import {
   addTaskItem,
   cycleTaskState,
   setTaskStateValue,
+  refreshData,
 } from "./data.js";
 import { buildSettingsToastMessage, refresh } from "./ui.js";
 import { initPicker } from "./picker.js";
@@ -120,9 +121,10 @@ const { closeSettingsSheet } = initSettings({
   settingsButton,
   settingsSheet,
   pathDepthSelect,
-  onChange: (nextDepth) => {
+  onChange: async (nextDepth) => {
     state.pathDepth = parsePathDepth(nextDepth);
     saveSettings({ pathDepth: nextDepth });
+    await refreshData();
     setSavePickerDefault();
     refreshUI();
     showSettingsToast();
@@ -159,10 +161,7 @@ bindEvents({
 });
 
 const initializeData = async () => {
-  const data = await loadOrgData();
-  state.data = Array.isArray(data)
-    ? data
-    : JSON.parse(JSON.stringify(FALLBACK_DATA));
+  await refreshData({ loader: loadOrgData, fallback: FALLBACK_DATA });
   setSavePickerDefault();
   refreshUI();
 };
