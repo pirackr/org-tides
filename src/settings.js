@@ -44,6 +44,17 @@ export const parsePathDepth = (value) => {
   return Number.isNaN(parsed) || parsed < 1 ? null : parsed;
 };
 
+export const findCloseSettingsTarget = (target) => {
+  let node = target;
+  while (node) {
+    if (node.dataset?.closeSettings) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+};
+
 export const initSettings = ({
   settingsButton,
   settingsSheet,
@@ -69,7 +80,7 @@ export const initSettings = ({
 
   if (settingsSheet) {
     settingsSheet.addEventListener("click", (event) => {
-      if (event.target?.dataset?.closeSettings) {
+      if (findCloseSettingsTarget(event.target)) {
         closeSettingsSheet();
       }
     });
