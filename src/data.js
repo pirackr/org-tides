@@ -148,6 +148,26 @@ export const limitPathDepth = (path = [], depth) => {
   return path.slice(0, depth);
 };
 
+const normalizeFilePathSegments = (path) => {
+  if (!path) return [];
+  const normalized = String(path)
+    .replace(/\\/g, "/")
+    .replace(/^\.?\//, "");
+  const segments = normalized.split("/").filter(Boolean);
+  if (segments[0] === "org") {
+    return segments.slice(1);
+  }
+  return segments;
+};
+
+export const filterOrgFilesByDepth = (files = [], depth) => {
+  if (!Array.isArray(files)) return [];
+  if (!Number.isInteger(depth) || depth < 1) {
+    return [...files];
+  }
+  return files.filter((path) => normalizeFilePathSegments(path).length <= depth);
+};
+
 export const mapHeadlinesToItems = (headlines = []) => {
   const items = [];
   const walk = (nodes, ancestors, topTitle) => {
@@ -207,7 +227,10 @@ export const pickInsertAfterId = (items = []) => {
 export const loadOrgData = async () => {
   try {
     const data = await requestGraphQL(ORG_FILES_QUERY);
-    const files = data?.orgFiles?.items ?? [];
+    const files = filterOrgFilesByDepth(
+      data?.orgFiles?.items ?? [],
+      state.pathDepth
+    );
     const results = await Promise.all(
       files.map(async (path) => {
         try {

@@ -9,6 +9,7 @@ import {
   pickInsertAfterId,
   resolveGraphQLEndpoint,
   limitPathDepth,
+  filterOrgFilesByDepth,
 } from "../src/data.js";
 
 test("buildHeadlineSelection nests children", () => {
@@ -78,6 +79,28 @@ test("limitPathDepth trims path segments", () => {
   assert.deepEqual(limitPathDepth(path, 1), ["Work"]);
   assert.deepEqual(limitPathDepth(path, 2), ["Work", "Archive"]);
   assert.deepEqual(limitPathDepth(path, null), path);
+});
+
+test("filterOrgFilesByDepth limits org files by directory depth", () => {
+  const files = [
+    "inbox.org",
+    "archive/2024.org",
+    "notes/work/todo.org",
+    "org/todo.org",
+    "org/archive/old.org",
+  ];
+
+  assert.deepEqual(filterOrgFilesByDepth(files, 1), [
+    "inbox.org",
+    "org/todo.org",
+  ]);
+  assert.deepEqual(filterOrgFilesByDepth(files, 2), [
+    "inbox.org",
+    "archive/2024.org",
+    "org/todo.org",
+    "org/archive/old.org",
+  ]);
+  assert.deepEqual(filterOrgFilesByDepth(files, null), files);
 });
 
 test("pickInsertAfterId prefers last top-level headline", () => {
