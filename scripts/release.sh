@@ -51,6 +51,11 @@ cat > "$DIST_DIR/manifest.json" <<'JSON'
   ]
 }
 JSON
+cat > "$DIST_DIR/config.js" <<'JS'
+window.ORG_TIDES_CONFIG = {
+  apiBaseUrl: "https://todo.pirackr.xyz/api",
+};
+JS
 ln -sfn "$ROOT_DIR/assets/icons" "$DIST_ASSETS_DIR/icons"
 ln -sfn "$ROOT_DIR/org" "$DIST_DIR/org"
 
@@ -247,7 +252,8 @@ cat > "$DIST_DIR/index.html" <<'HTML'
       </div>
     </div>
 
-    <script type="module" src="src/app.js"></script>
+    <script src="config.js"></script>
+    <script type="module" src="app.min.js"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js", { scope: "./" });
@@ -264,6 +270,7 @@ const ASSETS = [
   "./index.html",
   "./styles.min.css",
   "./app.min.js",
+  "./config.js",
   "./manifest.json",
   "./assets/icons/icon.svg",
   "./assets/icons/icon-192.png",
