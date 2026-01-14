@@ -7,6 +7,7 @@ import {
   slugify,
   buildTaskContent,
   pickInsertAfterId,
+  resolveGraphQLEndpoint,
 } from "../src/data.js";
 
 test("buildHeadlineSelection nests children", () => {
@@ -80,4 +81,36 @@ test("pickInsertAfterId prefers last top-level headline", () => {
   assert.equal(pickInsertAfterId(items), "c");
   assert.equal(pickInsertAfterId([{ id: "x", level: 2 }]), "x");
   assert.equal(pickInsertAfterId([]), null);
+});
+
+const withWindow = (nextWindow, fn) => {
+  const previousWindow = globalThis.window;
+  globalThis.window = nextWindow;
+  try {
+    fn();
+  } finally {
+    if (previousWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = previousWindow;
+    }
+  }
+};
+
+test("resolveGraphQLEndpoint uses localhost for local dev", () => {
+  withWindow(
+    { location: { hostname: "localhost", origin: "http://localhost:8000" } },
+    () => {
+      assert.equal(resolveGraphQLEndpoint(), "http://localhost:8080/");
+    }
+  );
+});
+
+test("resolveGraphQLEndpoint derives origin in prod", () => {
+  withWindow(
+    { location: { hostname: "tides.example", origin: "https://tides.example" } },
+    () => {
+      assert.equal(resolveGraphQLEndpoint(), "https://tides.example/");
+    }
+  );
 });
