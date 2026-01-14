@@ -21,3 +21,20 @@ test("settings icon uses sliders glyph", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.ok(html.includes("data-icon=\"settings-sliders\""));
 });
+
+test("settings check and submit icons are centered", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(
+    css,
+    /\.modal__submit\s*\{[^}]*display:\s*inline-flex[^}]*align-items:\s*center[^}]*justify-content:\s*center/
+  );
+  assert.match(
+    css,
+    /\.settings-field__option-check\s*\{[^}]*position:\s*relative/
+  );
+  assert.match(
+    css,
+    /\.settings-field__option\.is-selected\s+\.settings-field__option-check::after\s*\{[^}]*left:\s*50%[^}]*top:\s*50%/
+  );
+});
