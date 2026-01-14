@@ -49,3 +49,13 @@ test("pull indicator markup is present", async () => {
   assert.ok(html.includes("id=\"pullIndicator\""));
   assert.ok(html.includes("id=\"pullIndicatorLabel\""));
 });
+
+test("pull indicator sits below the top nav", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.pull-indicator\s*\{[^}]*top:\s*8px/);
+  assert.match(
+    css,
+    /\.pull-indicator\s*\{[^}]*transform:\s*translate\(-50%,\s*var\(--pull-offset,\s*0px\)\)/
+  );
+});
